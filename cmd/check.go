@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -14,7 +15,7 @@ import (
 var checkCmd = &cobra.Command{
 	Use:   "check",
 	Short: "Check if any chart versions are stale",
-	Long:  "Scans for Chart.yaml files and reports which charts have changes since their last version bump. Exits 1 if any charts are stale (CI-friendly).",
+	Long:  "Scans for Chart.yaml files and reports which charts have file changes relative to --base without a corresponding version bump. Exits 1 if any charts are stale (CI-friendly).",
 	RunE:  runCheck,
 }
 
@@ -26,6 +27,25 @@ func runCheck(cmd *cobra.Command, args []string) error {
 
 	if !git.IsRepo(absDir) {
 		return fmt.Errorf("%s is not inside a git repository", absDir)
+	}
+
+	repoRoot, err := git.RepoRoot(absDir)
+	if err != nil {
+		return err
+	}
+
+	baseRef := base
+	if baseRef == "" {
+		baseRef = git.ResolveBase()
+	}
+
+	if !git.RefExists(repoRoot, baseRef) {
+		// Derive a useful fetch hint: "origin/develop" → "git fetch origin develop --depth=1"
+		fetchHint := baseRef
+		if strings.HasPrefix(baseRef, "origin/") {
+			fetchHint = "git fetch origin " + strings.TrimPrefix(baseRef, "origin/") + " --depth=1"
+		}
+		return fmt.Errorf("base ref %q not found; fetch it first (e.g. %s) or set --base", baseRef, fetchHint)
 	}
 
 	charts, err := chart.Discover(absDir)
@@ -46,7 +66,7 @@ func runCheck(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		isStale, err := git.IsStale(c.Dir, c.Path)
+		isStale, err := git.IsStale(repoRoot, c.Dir, c.Path, baseRef, c.Version)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "warning: checking %s: %s\n", c.Name, err)
 			continue

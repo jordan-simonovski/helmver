@@ -125,7 +125,8 @@ func writeFile(t *testing.T, path, content string) {
 	}
 }
 
-// setupFixture copies a testdata fixture into a temp git repo, commits it, and returns the repo path.
+// setupFixture copies a testdata fixture into a temp git repo, commits it,
+// creates a "base" branch for staleness comparison, and returns the repo path.
 func setupFixture(t *testing.T, fixtureName string) string {
 	t.Helper()
 	repo := t.TempDir()
@@ -133,6 +134,7 @@ func setupFixture(t *testing.T, fixtureName string) string {
 	copyDir(t, filepath.Join(testdataDir(), fixtureName), repo)
 	gitRun(t, repo, "add", "-A")
 	gitRun(t, repo, "commit", "-m", "initial commit")
+	gitRun(t, repo, "branch", "base")
 	return repo
 }
 
@@ -143,7 +145,7 @@ func setupFixture(t *testing.T, fixtureName string) string {
 func TestAcceptance_SingleChart_CheckClean(t *testing.T) {
 	repo := setupFixture(t, "single-chart")
 
-	out, code := helmver(t, repo, "check")
+	out, code := helmver(t, repo, "check", "--base", "base")
 	if code != 0 {
 		t.Fatalf("expected exit 0, got %d. output:\n%s", code, out)
 	}
@@ -160,7 +162,7 @@ func TestAcceptance_SingleChart_CheckStaleAfterEdit(t *testing.T) {
 	gitRun(t, repo, "add", "-A")
 	gitRun(t, repo, "commit", "-m", "scale up replicas")
 
-	out, code := helmver(t, repo, "check")
+	out, code := helmver(t, repo, "check", "--base", "base")
 	if code != 1 {
 		t.Fatalf("expected exit 1, got %d. output:\n%s", code, out)
 	}
@@ -178,7 +180,7 @@ func TestAcceptance_SingleChart_CheckStaleAfterTemplateEdit(t *testing.T) {
 	gitRun(t, repo, "add", "-A")
 	gitRun(t, repo, "commit", "-m", "update template")
 
-	out, code := helmver(t, repo, "check")
+	out, code := helmver(t, repo, "check", "--base", "base")
 	if code != 1 {
 		t.Fatalf("expected exit 1 after template edit, got %d. output:\n%s", code, out)
 	}
@@ -246,7 +248,7 @@ func TestAcceptance_SingleChart_CleanAfterBumpCommit(t *testing.T) {
 	gitRun(t, repo, "commit", "-m", "change values")
 
 	// Verify stale
-	out, code := helmver(t, repo, "check")
+	out, code := helmver(t, repo, "check", "--base", "base")
 	if code != 1 {
 		t.Fatalf("should be stale, got exit %d: %s", code, out)
 	}
@@ -264,7 +266,7 @@ func TestAcceptance_SingleChart_CleanAfterBumpCommit(t *testing.T) {
 	gitRun(t, repo, "commit", "-m", "bump to "+newVer)
 
 	// Verify clean
-	out, code = helmver(t, repo, "check")
+	out, code = helmver(t, repo, "check", "--base", "base")
 	if code != 0 {
 		t.Errorf("should be clean after bump, got exit %d: %s", code, out)
 	}
@@ -277,7 +279,7 @@ func TestAcceptance_SingleChart_CleanAfterBumpCommit(t *testing.T) {
 func TestAcceptance_Monorepo_CheckClean(t *testing.T) {
 	repo := setupFixture(t, "monorepo")
 
-	out, code := helmver(t, repo, "check", "--dir", filepath.Join(repo, "charts"))
+	out, code := helmver(t, repo, "check", "--base", "base", "--dir", filepath.Join(repo, "charts"))
 	if code != 0 {
 		t.Fatalf("expected exit 0, got %d. output:\n%s", code, out)
 	}
@@ -292,7 +294,7 @@ func TestAcceptance_Monorepo_OneChartStale(t *testing.T) {
 	gitRun(t, repo, "add", "-A")
 	gitRun(t, repo, "commit", "-m", "scale worker")
 
-	out, code := helmver(t, repo, "check", "--dir", filepath.Join(repo, "charts"))
+	out, code := helmver(t, repo, "check", "--base", "base", "--dir", filepath.Join(repo, "charts"))
 	if code != 1 {
 		t.Fatalf("expected exit 1, got %d. output:\n%s", code, out)
 	}
@@ -316,7 +318,7 @@ func TestAcceptance_Monorepo_AllChartsStale(t *testing.T) {
 	gitRun(t, repo, "add", "-A")
 	gitRun(t, repo, "commit", "-m", "update all")
 
-	out, code := helmver(t, repo, "check", "--dir", filepath.Join(repo, "charts"))
+	out, code := helmver(t, repo, "check", "--base", "base", "--dir", filepath.Join(repo, "charts"))
 	if code != 1 {
 		t.Fatalf("expected exit 1, got %d", code)
 	}
@@ -348,7 +350,7 @@ func TestAcceptance_Monorepo_BumpOneLeaveOthersClean(t *testing.T) {
 	gitRun(t, repo, "commit", "-m", "bump api to "+newVer)
 
 	// api should be clean, web and worker still stale
-	out, code := helmver(t, repo, "check", "--dir", filepath.Join(repo, "charts"))
+	out, code := helmver(t, repo, "check", "--base", "base", "--dir", filepath.Join(repo, "charts"))
 	if code != 1 {
 		t.Fatalf("expected exit 1 (web+worker stale), got %d", code)
 	}
@@ -541,7 +543,7 @@ func TestAcceptance_Subchart_CheckIndependent(t *testing.T) {
 	gitRun(t, repo, "add", "-A")
 	gitRun(t, repo, "commit", "-m", "update redis port")
 
-	out, code := helmver(t, repo, "check")
+	out, code := helmver(t, repo, "check", "--base", "base")
 	if code != 1 {
 		t.Fatalf("expected exit 1, got %d. output:\n%s", code, out)
 	}
@@ -662,7 +664,7 @@ func TestAcceptance_Binary_CheckMonorepoWithDir(t *testing.T) {
 	repo := setupFixture(t, "monorepo")
 
 	// Clean state
-	out, code := helmver(t, repo, "check", "--dir", filepath.Join(repo, "charts"))
+	out, code := helmver(t, repo, "check", "--base", "base", "--dir", filepath.Join(repo, "charts"))
 	if code != 0 {
 		t.Fatalf("expected clean, got %d:\n%s", code, out)
 	}
@@ -672,7 +674,7 @@ func TestAcceptance_Binary_CheckMonorepoWithDir(t *testing.T) {
 	gitRun(t, repo, "add", "-A")
 	gitRun(t, repo, "commit", "-m", "scale web")
 
-	out, code = helmver(t, repo, "check", "--dir", filepath.Join(repo, "charts"))
+	out, code = helmver(t, repo, "check", "--base", "base", "--dir", filepath.Join(repo, "charts"))
 	if code != 1 {
 		t.Fatalf("expected stale, got %d:\n%s", code, out)
 	}
@@ -687,7 +689,7 @@ func TestAcceptance_Binary_CheckMonorepoWithDir(t *testing.T) {
 func TestAcceptance_Binary_CheckSubchart(t *testing.T) {
 	repo := setupFixture(t, "subchart-parent")
 
-	out, code := helmver(t, repo, "check")
+	out, code := helmver(t, repo, "check", "--base", "base")
 	if code != 0 {
 		t.Fatalf("expected clean, got %d:\n%s", code, out)
 	}

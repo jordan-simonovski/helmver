@@ -14,9 +14,16 @@ PLATFORMS := \
 
 DIST_DIR := dist
 
-.PHONY: all build test test-unit test-e2e test-acceptance lint fmt vet clean cross-compile help
+.PHONY: all setup build test test-unit test-e2e test-acceptance lint fmt vet clean cross-compile help
 
 all: lint test build ## Run lint, test, and build
+
+setup: ## Install dev tooling (golangci-lint, goimports)
+	@echo "Installing golangci-lint..."
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	@echo "Installing goimports..."
+	@go install golang.org/x/tools/cmd/goimports@latest
+	@echo "Done. Make sure $$(go env GOPATH)/bin is in your PATH."
 
 build: ## Build for current OS/arch
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) .
@@ -33,11 +40,15 @@ test-e2e: ## Run end-to-end tests only
 test-acceptance: ## Run acceptance tests against fixture charts
 	go test -v -count=1 -race ./test/acceptance/...
 
+GOLANGCI_LINT := $(shell go env GOPATH)/bin/golangci-lint
+
 lint: vet ## Run golangci-lint and go vet
-	@if command -v golangci-lint >/dev/null 2>&1; then \
+	@if [ -x "$(GOLANGCI_LINT)" ]; then \
+		"$(GOLANGCI_LINT)" run ./...; \
+	elif command -v golangci-lint >/dev/null 2>&1; then \
 		golangci-lint run ./...; \
 	else \
-		echo "golangci-lint not installed, skipping (install: https://golangci-lint.run/welcome/install/)"; \
+		echo "golangci-lint not installed, run: make setup"; \
 	fi
 
 vet: ## Run go vet

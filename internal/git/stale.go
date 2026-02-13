@@ -27,21 +27,30 @@ func RepoRoot(dir string) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
-// IsStale returns true if the chart directory has changes since the last
-// commit that bumped the version field in Chart.yaml.
+// RefExists reports whether a git ref (branch, tag, or SHA) resolves.
+func RefExists(repoRoot, ref string) bool {
+	cmd := exec.Command("git", "-C", repoRoot, "rev-parse", "--verify", ref)
+	return cmd.Run() == nil
+}
+
+// IsStale reports whether a chart has file changes relative to baseRef
+// without a corresponding version bump in Chart.yaml. This mirrors the
+// common CI pattern:
 //
-// Logic:
-//  1. Find the last commit that changed the "version:" line in Chart.yaml.
-//  2. Check if any files in the chart directory have changed since that commit.
-//  3. If there are changes (or no version commit exists), the chart is stale.
-func IsStale(chartDir, chartFile string) (bool, error) {
-	repoRoot, err := RepoRoot(chartDir)
-	if err != nil {
-		return false, err
-	}
+//	git diff --name-only <base>...HEAD -- <chartDir>
+//	compare version in Chart.yaml vs git show <base>:Chart.yaml
+//
+// A chart is stale when files changed but the version field did not.
+// A chart that does not exist in baseRef (new chart) is never stale.
+func IsStale(repoRoot, chartDir, chartFile, baseRef, currentVersion string) (bool, error) {
+	var err error
 
 	// Resolve symlinks so paths are comparable with git's resolved toplevel.
 	// On macOS, /var -> /private/var breaks filepath.Rel without this.
+	repoRoot, err = filepath.EvalSymlinks(repoRoot)
+	if err != nil {
+		return false, err
+	}
 	chartFile, err = filepath.EvalSymlinks(chartFile)
 	if err != nil {
 		return false, err
@@ -51,87 +60,63 @@ func IsStale(chartDir, chartFile string) (bool, error) {
 		return false, err
 	}
 
-	// Get relative paths from repo root for git commands
-	relChart, err := filepath.Rel(repoRoot, chartFile)
-	if err != nil {
-		return false, err
-	}
 	relDir, err := filepath.Rel(repoRoot, chartDir)
 	if err != nil {
 		return false, err
 	}
-
-	// Find the last commit that touched the version line in Chart.yaml
-	// -S finds commits where the number of occurrences of the string changed
-	// We look for changes to lines matching "version:" in the Chart.yaml
-	lastVersionCommit, err := lastCommitChangingVersion(repoRoot, relChart)
-	if err != nil || lastVersionCommit == "" {
-		// No commit ever touched version: treat as stale
-		return true, nil
+	relFile, err := filepath.Rel(repoRoot, chartFile)
+	if err != nil {
+		return false, err
 	}
 
-	// Check for any changes in the chart directory since that commit
-	// (both committed and uncommitted)
-	changes := changedFilesSince(repoRoot, lastVersionCommit, relDir)
+	// 1. Any files changed between baseRef and HEAD?
+	changed, err := hasChangedFiles(repoRoot, baseRef, relDir)
+	if err != nil {
+		return false, fmt.Errorf("diff %s...HEAD -- %s: %w", baseRef, relDir, err)
+	}
+	if !changed {
+		return false, nil
+	}
 
-	return len(changes) > 0, nil
+	// 2. Files changed; compare versions.
+	baseVer, err := showVersion(repoRoot, baseRef, relFile)
+	if err != nil {
+		// Chart doesn't exist in base ref → new chart, not stale.
+		return false, nil
+	}
+
+	return currentVersion == baseVer, nil
 }
 
-// lastCommitChangingVersion finds the most recent commit that modified the
-// "version:" field in the given Chart.yaml file.
-func lastCommitChangingVersion(repoRoot, relChartFile string) (string, error) {
+// hasChangedFiles returns true if any files under relDir differ between
+// the merge-base of baseRef/HEAD and HEAD (three-dot diff).
+func hasChangedFiles(repoRoot, baseRef, relDir string) (bool, error) {
 	cmd := exec.Command("git", "-C", repoRoot,
-		"log", "-1", "--format=%H",
-		"-G", `^version:`,
-		"--", relChartFile,
+		"diff", "--name-only", baseRef+"...HEAD", "--", relDir,
 	)
 	out, err := cmd.Output()
 	if err != nil {
-		return "", err
+		return false, err
 	}
-	return strings.TrimSpace(string(out)), nil
+	return strings.TrimSpace(string(out)) != "", nil
 }
 
-// changedFilesSince returns files in relDir that have changed since the given commit.
-// This includes both committed changes and uncommitted working tree changes.
-func changedFilesSince(repoRoot, commit, relDir string) []string {
-	// Committed changes since the version bump
+// showVersion extracts the version field from a Chart.yaml at the given ref.
+func showVersion(repoRoot, ref, relFile string) (string, error) {
 	cmd := exec.Command("git", "-C", repoRoot,
-		"diff", "--name-only", commit, "HEAD", "--", relDir,
+		"show", ref+":"+relFile,
 	)
 	out, err := cmd.Output()
 	if err != nil {
-		// If HEAD doesn't exist (fresh repo), fall back to checking staged/unstaged
-		out = nil
+		return "", fmt.Errorf("git show %s:%s: %w", ref, relFile, err)
 	}
-
-	files := splitLines(string(out))
-
-	// Also check for uncommitted changes (staged + unstaged)
-	cmd2 := exec.Command("git", "-C", repoRoot,
-		"diff", "--name-only", commit, "--", relDir,
-	)
-	out2, err := cmd2.Output()
-	if err == nil {
-		files = append(files, splitLines(string(out2))...)
-	}
-
-	// Deduplicate
-	seen := make(map[string]bool)
-	var unique []string
-	for _, f := range files {
-		if f != "" && !seen[f] {
-			seen[f] = true
-			unique = append(unique, f)
+	for _, line := range strings.Split(string(out), "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "version:") {
+			v := strings.TrimSpace(strings.TrimPrefix(line, "version:"))
+			v = strings.Trim(v, "\"'")
+			return v, nil
 		}
 	}
-	return unique
-}
-
-func splitLines(s string) []string {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return nil
-	}
-	return strings.Split(s, "\n")
+	return "", fmt.Errorf("no version field in %s:%s", ref, relFile)
 }

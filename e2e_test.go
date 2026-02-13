@@ -86,8 +86,9 @@ func TestE2E_Check_SingleChart_Clean(t *testing.T) {
 		"apiVersion: v2\nname: myapp\nversion: 1.0.0\n")
 	git(t, dir, "add", "-A")
 	git(t, dir, "commit", "-m", "init chart")
+	git(t, dir, "branch", "base")
 
-	out, code := helmver(t, dir, "check")
+	out, code := helmver(t, dir, "check", "--base", "base")
 	if code != 0 {
 		t.Errorf("expected exit 0, got %d. output:\n%s", code, out)
 	}
@@ -105,13 +106,14 @@ func TestE2E_Check_SingleChart_Stale(t *testing.T) {
 	writeFile(t, filepath.Join(dir, "values.yaml"), "key: val\n")
 	git(t, dir, "add", "-A")
 	git(t, dir, "commit", "-m", "init chart")
+	git(t, dir, "branch", "base")
 
 	// Modify a file without bumping version
 	writeFile(t, filepath.Join(dir, "values.yaml"), "key: changed\n")
 	git(t, dir, "add", "-A")
 	git(t, dir, "commit", "-m", "change values")
 
-	out, code := helmver(t, dir, "check")
+	out, code := helmver(t, dir, "check", "--base", "base")
 	if code != 1 {
 		t.Errorf("expected exit 1, got %d. output:\n%s", code, out)
 	}
@@ -125,8 +127,13 @@ func TestE2E_Check_SingleChart_Stale(t *testing.T) {
 
 func TestE2E_Check_SingleChart_NoCharts(t *testing.T) {
 	dir := initGitRepo(t)
+	// Need at least one commit for the base ref
+	writeFile(t, filepath.Join(dir, ".gitkeep"), "")
+	git(t, dir, "add", "-A")
+	git(t, dir, "commit", "-m", "init")
+	git(t, dir, "branch", "base")
 
-	out, code := helmver(t, dir, "check")
+	out, code := helmver(t, dir, "check", "--base", "base")
 	if code != 0 {
 		t.Errorf("expected exit 0, got %d", code)
 	}
@@ -149,8 +156,9 @@ func TestE2E_Check_Monorepo_AllClean(t *testing.T) {
 	}
 	git(t, dir, "add", "-A")
 	git(t, dir, "commit", "-m", "init all charts")
+	git(t, dir, "branch", "base")
 
-	out, code := helmver(t, dir, "check", "--dir", filepath.Join(dir, "charts"))
+	out, code := helmver(t, dir, "check", "--base", "base", "--dir", filepath.Join(dir, "charts"))
 	if code != 0 {
 		t.Errorf("expected exit 0, got %d. output:\n%s", code, out)
 	}
@@ -171,13 +179,14 @@ func TestE2E_Check_Monorepo_SomeStale(t *testing.T) {
 	}
 	git(t, dir, "add", "-A")
 	git(t, dir, "commit", "-m", "init all charts")
+	git(t, dir, "branch", "base")
 
 	// Modify only the api chart
 	writeFile(t, filepath.Join(dir, "charts", "api", "values.yaml"), "key: changed\n")
 	git(t, dir, "add", "-A")
 	git(t, dir, "commit", "-m", "update api values")
 
-	out, code := helmver(t, dir, "check", "--dir", filepath.Join(dir, "charts"))
+	out, code := helmver(t, dir, "check", "--base", "base", "--dir", filepath.Join(dir, "charts"))
 	if code != 1 {
 		t.Errorf("expected exit 1, got %d. output:\n%s", code, out)
 	}
@@ -204,6 +213,7 @@ func TestE2E_Check_Monorepo_AllStale(t *testing.T) {
 	}
 	git(t, dir, "add", "-A")
 	git(t, dir, "commit", "-m", "init")
+	git(t, dir, "branch", "base")
 
 	// Modify both
 	writeFile(t, filepath.Join(dir, "charts", "api", "values.yaml"), "key: new\n")
@@ -211,7 +221,7 @@ func TestE2E_Check_Monorepo_AllStale(t *testing.T) {
 	git(t, dir, "add", "-A")
 	git(t, dir, "commit", "-m", "update both")
 
-	out, code := helmver(t, dir, "check", "--dir", filepath.Join(dir, "charts"))
+	out, code := helmver(t, dir, "check", "--base", "base", "--dir", filepath.Join(dir, "charts"))
 	if code != 1 {
 		t.Errorf("expected exit 1, got %d", code)
 	}
@@ -247,6 +257,7 @@ func TestE2E_Check_Monorepo_AfterBump(t *testing.T) {
 	}
 	git(t, dir, "add", "-A")
 	git(t, dir, "commit", "-m", "init")
+	git(t, dir, "branch", "base")
 
 	// Modify api
 	writeFile(t, filepath.Join(dir, "charts", "api", "values.yaml"), "key: changed\n")
@@ -260,7 +271,7 @@ func TestE2E_Check_Monorepo_AfterBump(t *testing.T) {
 	git(t, dir, "commit", "-m", "bump api to 0.2.0")
 
 	// Now everything should be clean
-	out, code := helmver(t, dir, "check", "--dir", filepath.Join(dir, "charts"))
+	out, code := helmver(t, dir, "check", "--base", "base", "--dir", filepath.Join(dir, "charts"))
 	if code != 0 {
 		t.Errorf("expected exit 0 after bump, got %d. output:\n%s", code, out)
 	}

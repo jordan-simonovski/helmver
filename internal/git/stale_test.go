@@ -52,102 +52,149 @@ func TestIsRepo(t *testing.T) {
 	}
 }
 
+func TestRefExists(t *testing.T) {
+	dir := initGitRepo(t)
+	writeFile(t, filepath.Join(dir, ".gitkeep"), "")
+	run(t, dir, "git", "add", "-A")
+	run(t, dir, "git", "commit", "-m", "initial")
+
+	if !RefExists(dir, "HEAD") {
+		t.Error("HEAD should exist")
+	}
+	if RefExists(dir, "nonexistent-branch") {
+		t.Error("nonexistent-branch should not exist")
+	}
+}
+
+func TestIsStaleNoChanges(t *testing.T) {
+	dir := initGitRepo(t)
+
+	chartDir := filepath.Join(dir, "mychart")
+	chartFile := filepath.Join(chartDir, "Chart.yaml")
+	writeFile(t, chartFile, "apiVersion: v2\nname: mychart\nversion: 0.1.0\n")
+	writeFile(t, filepath.Join(chartDir, "values.yaml"), "key: val\n")
+	run(t, dir, "git", "add", "-A")
+	run(t, dir, "git", "commit", "-m", "initial")
+	run(t, dir, "git", "branch", "base")
+
+	// No changes since base → not stale
+	stale, err := IsStale(dir, chartDir, chartFile, "base", "0.1.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stale {
+		t.Error("chart with no changes since base should not be stale")
+	}
+}
+
+func TestIsStaleFileChangedNoVersionBump(t *testing.T) {
+	dir := initGitRepo(t)
+
+	chartDir := filepath.Join(dir, "mychart")
+	chartFile := filepath.Join(chartDir, "Chart.yaml")
+	writeFile(t, chartFile, "apiVersion: v2\nname: mychart\nversion: 0.1.0\n")
+	writeFile(t, filepath.Join(chartDir, "values.yaml"), "key: val\n")
+	run(t, dir, "git", "add", "-A")
+	run(t, dir, "git", "commit", "-m", "initial")
+	run(t, dir, "git", "branch", "base")
+
+	// Modify values without bumping version
+	writeFile(t, filepath.Join(chartDir, "values.yaml"), "key: newval\n")
+	run(t, dir, "git", "add", "-A")
+	run(t, dir, "git", "commit", "-m", "update values")
+
+	stale, err := IsStale(dir, chartDir, chartFile, "base", "0.1.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !stale {
+		t.Error("chart with file changes and no version bump should be stale")
+	}
+}
+
+func TestIsStaleVersionBumped(t *testing.T) {
+	dir := initGitRepo(t)
+
+	chartDir := filepath.Join(dir, "mychart")
+	chartFile := filepath.Join(chartDir, "Chart.yaml")
+	writeFile(t, chartFile, "apiVersion: v2\nname: mychart\nversion: 0.1.0\n")
+	writeFile(t, filepath.Join(chartDir, "values.yaml"), "key: val\n")
+	run(t, dir, "git", "add", "-A")
+	run(t, dir, "git", "commit", "-m", "initial")
+	run(t, dir, "git", "branch", "base")
+
+	// Modify values AND bump version
+	writeFile(t, filepath.Join(chartDir, "values.yaml"), "key: newval\n")
+	writeFile(t, chartFile, "apiVersion: v2\nname: mychart\nversion: 0.2.0\n")
+	run(t, dir, "git", "add", "-A")
+	run(t, dir, "git", "commit", "-m", "bump version")
+
+	stale, err := IsStale(dir, chartDir, chartFile, "base", "0.2.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stale {
+		t.Error("chart with version bump should not be stale")
+	}
+}
+
 func TestIsStaleNewChart(t *testing.T) {
 	dir := initGitRepo(t)
 
-	// Create a chart that has never been committed
-	chartDir := filepath.Join(dir, "mychart")
-	chartFile := filepath.Join(chartDir, "Chart.yaml")
-	writeFile(t, chartFile, "apiVersion: v2\nname: mychart\nversion: 0.1.0\n")
-
-	// Unstaged new file should be stale
-	stale, err := IsStale(chartDir, chartFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !stale {
-		t.Error("new uncommitted chart should be stale")
-	}
-}
-
-func TestIsStaleAfterVersionBump(t *testing.T) {
-	dir := initGitRepo(t)
-
-	chartDir := filepath.Join(dir, "mychart")
-	chartFile := filepath.Join(chartDir, "Chart.yaml")
-
-	// Initial commit with chart
-	writeFile(t, chartFile, "apiVersion: v2\nname: mychart\nversion: 0.1.0\n")
-	writeFile(t, filepath.Join(chartDir, "values.yaml"), "key: val\n")
+	// Empty initial commit as base
+	writeFile(t, filepath.Join(dir, ".gitkeep"), "")
 	run(t, dir, "git", "add", "-A")
 	run(t, dir, "git", "commit", "-m", "initial")
+	run(t, dir, "git", "branch", "base")
 
-	// At this point, the version was just committed and nothing changed since.
-	// The chart should NOT be stale.
-	stale, err := IsStale(chartDir, chartFile)
+	// Add a chart that does not exist in base
+	chartDir := filepath.Join(dir, "mychart")
+	chartFile := filepath.Join(chartDir, "Chart.yaml")
+	writeFile(t, chartFile, "apiVersion: v2\nname: mychart\nversion: 0.1.0\n")
+	run(t, dir, "git", "add", "-A")
+	run(t, dir, "git", "commit", "-m", "add chart")
+
+	stale, err := IsStale(dir, chartDir, chartFile, "base", "0.1.0")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if stale {
-		t.Error("chart should not be stale right after version commit")
+		t.Error("new chart not present in base should not be stale")
 	}
 }
 
-func TestIsStaleAfterFileChange(t *testing.T) {
+func TestIsStaleMultipleChangesOneBump(t *testing.T) {
 	dir := initGitRepo(t)
 
 	chartDir := filepath.Join(dir, "mychart")
 	chartFile := filepath.Join(chartDir, "Chart.yaml")
-
-	// Initial commit with chart
 	writeFile(t, chartFile, "apiVersion: v2\nname: mychart\nversion: 0.1.0\n")
 	writeFile(t, filepath.Join(chartDir, "values.yaml"), "key: val\n")
+	writeFile(t, filepath.Join(chartDir, "templates", "deploy.yaml"), "kind: Deployment\n")
 	run(t, dir, "git", "add", "-A")
 	run(t, dir, "git", "commit", "-m", "initial")
+	run(t, dir, "git", "branch", "base")
 
-	// Now modify a file in the chart directory
-	writeFile(t, filepath.Join(chartDir, "values.yaml"), "key: newval\n")
+	// Change values
+	writeFile(t, filepath.Join(chartDir, "values.yaml"), "key: v2\n")
 	run(t, dir, "git", "add", "-A")
 	run(t, dir, "git", "commit", "-m", "update values")
 
-	// Now there are changes since the last version bump => stale
-	stale, err := IsStale(chartDir, chartFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !stale {
-		t.Error("chart should be stale after file changes without version bump")
-	}
-}
-
-func TestIsStaleAfterVersionBumpFollowedByClean(t *testing.T) {
-	dir := initGitRepo(t)
-
-	chartDir := filepath.Join(dir, "mychart")
-	chartFile := filepath.Join(chartDir, "Chart.yaml")
-
-	// Initial commit
-	writeFile(t, chartFile, "apiVersion: v2\nname: mychart\nversion: 0.1.0\n")
-	writeFile(t, filepath.Join(chartDir, "values.yaml"), "key: val\n")
+	// Change template
+	writeFile(t, filepath.Join(chartDir, "templates", "deploy.yaml"), "kind: Deployment\nmetadata:\n  name: x\n")
 	run(t, dir, "git", "add", "-A")
-	run(t, dir, "git", "commit", "-m", "initial")
+	run(t, dir, "git", "commit", "-m", "update template")
 
-	// Modify values
-	writeFile(t, filepath.Join(chartDir, "values.yaml"), "key: newval\n")
-	run(t, dir, "git", "add", "-A")
-	run(t, dir, "git", "commit", "-m", "update values")
-
-	// Now bump the version (simulating what helmver changeset does)
+	// Bump version
 	writeFile(t, chartFile, "apiVersion: v2\nname: mychart\nversion: 0.2.0\n")
 	run(t, dir, "git", "add", "-A")
-	run(t, dir, "git", "commit", "-m", "bump to 0.2.0")
+	run(t, dir, "git", "commit", "-m", "bump")
 
-	// After version bump, chart should be clean
-	stale, err := IsStale(chartDir, chartFile)
+	stale, err := IsStale(dir, chartDir, chartFile, "base", "0.2.0")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if stale {
-		t.Error("chart should not be stale after version bump")
+		t.Error("chart should not be stale after version bump covers all changes")
 	}
 }
