@@ -37,17 +37,17 @@ func runChangeset(cmd *cobra.Command, args []string) error {
 	}
 
 	hasGit := git.IsRepo(absDir)
-	var repoRoot string
+	var repoRoot, baseRef string
 	if hasGit {
 		repoRoot, err = git.RepoRoot(absDir)
 		if err != nil {
 			hasGit = false
+		} else {
+			baseRef = base
+			if baseRef == "" {
+				baseRef = git.ResolveBase()
+			}
 		}
-	}
-
-	baseRef := base
-	if baseRef == "" {
-		baseRef = git.ResolveBase()
 	}
 
 	var all []*chart.Chart

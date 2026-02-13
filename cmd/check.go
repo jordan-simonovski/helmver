@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -39,7 +40,12 @@ func runCheck(cmd *cobra.Command, args []string) error {
 	}
 
 	if !git.RefExists(repoRoot, baseRef) {
-		return fmt.Errorf("base ref %q not found; fetch it first (e.g. git fetch origin main --depth=1) or set --base", baseRef)
+		// Derive a useful fetch hint: "origin/develop" → "git fetch origin develop --depth=1"
+		fetchHint := baseRef
+		if strings.HasPrefix(baseRef, "origin/") {
+			fetchHint = "git fetch origin " + strings.TrimPrefix(baseRef, "origin/") + " --depth=1"
+		}
+		return fmt.Errorf("base ref %q not found; fetch it first (e.g. %s) or set --base", baseRef, fetchHint)
 	}
 
 	charts, err := chart.Discover(absDir)
