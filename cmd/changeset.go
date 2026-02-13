@@ -7,10 +7,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/jsimonovski/helmver/internal/changelog"
-	"github.com/jsimonovski/helmver/internal/chart"
-	"github.com/jsimonovski/helmver/internal/git"
-	"github.com/jsimonovski/helmver/internal/tui"
+	"github.com/jordan-simonovski/helmver/internal/changelog"
+	"github.com/jordan-simonovski/helmver/internal/chart"
+	"github.com/jordan-simonovski/helmver/internal/git"
+	"github.com/jordan-simonovski/helmver/internal/tui"
 )
 
 var changesetCmd = &cobra.Command{

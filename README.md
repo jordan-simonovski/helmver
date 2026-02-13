@@ -20,28 +20,28 @@ helmver solves this by:
 ### Homebrew
 
 ```bash
-brew tap jsimonovski/helmver
+brew tap jordan-simonovski/helmver
 brew install helmver
 ```
 
 ### Go
 
 ```bash
-go install github.com/jsimonovski/helmver@latest
+go install github.com/jordan-simonovski/helmver@latest
 ```
 
 ### Docker
 
 ```bash
-docker pull ghcr.io/jsimonovski/helmver:latest
+docker pull ghcr.io/jordan-simonovski/helmver:latest
 
 # Run against current directory
-docker run --rm -v "$(pwd):/work" -w /work ghcr.io/jsimonovski/helmver check
+docker run --rm -v "$(pwd):/work" -w /work ghcr.io/jordan-simonovski/helmver check
 ```
 
 ### Binary
 
-Download the latest binary from [GitHub Releases](https://github.com/jsimonovski/helmver/releases) and place it in your `PATH`.
+Download the latest binary from [GitHub Releases](https://github.com/jordan-simonovski/helmver/releases) and place it in your `PATH`.
 
 Available for Linux, macOS, and Windows on both amd64 and arm64.
 
@@ -185,7 +185,7 @@ Or using the Docker image:
 - name: Check chart versions
   run: |
     docker run --rm -v "${{ github.workspace }}:/work" -w /work \
-      ghcr.io/jsimonovski/helmver:latest check --dir charts/
+      ghcr.io/jordan-simonovski/helmver:latest check --dir charts/
 ```
 
 `helmver check` returns exit code 1 when charts are stale, failing the CI step.

@@ -17,7 +17,7 @@ HELMVER_DIR="${HELMVER_DIR:-.}"
 
 if ! command -v "$HELMVER_BIN" >/dev/null 2>&1; then
     echo "helmver: not found in PATH, skipping version check"
-    echo "helmver: install from https://github.com/jsimonovski/helmver"
+    echo "helmver: install from https://github.com/jordan-simonovski/helmver"
     exit 0
 fi
 

@@ -12,7 +12,7 @@ const header = "# Changelog\n"
 
 // Prepend adds a new version entry to the top of CHANGELOG.md in the given directory.
 // If CHANGELOG.md does not exist, it is created with a top-level heading.
-func Prepend(dir string, version string, message string) error {
+func Prepend(dir, version, message string) error {
 	path := filepath.Join(dir, "CHANGELOG.md")
 	date := time.Now().Format("2006-01-02")
 
@@ -25,7 +25,7 @@ func Prepend(dir string, version string, message string) error {
 		}
 		// File does not exist; create with header
 		content := header + "\n" + entry + "\n"
-		return os.WriteFile(path, []byte(content), 0644)
+		return os.WriteFile(path, []byte(content), 0o644)
 	}
 
 	// Insert the new entry after the top-level heading
@@ -40,5 +40,5 @@ func Prepend(dir string, version string, message string) error {
 		content = header + "\n" + entry + "\n" + content
 	}
 
-	return os.WriteFile(path, []byte(content), 0644)
+	return os.WriteFile(path, []byte(content), 0o644)
 }

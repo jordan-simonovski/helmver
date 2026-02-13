@@ -6,7 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/jsimonovski/helmver/internal/chart"
+	"github.com/jordan-simonovski/helmver/internal/chart"
 )
 
 // selectChartsModel lets the user multi-select from all discovered charts.
@@ -31,8 +31,7 @@ func (m selectChartsModel) Init() tea.Cmd {
 }
 
 func (m selectChartsModel) Update(msg tea.Msg) (selectChartsModel, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	if msg, ok := msg.(tea.KeyMsg); ok {
 		switch msg.String() {
 		case "up", "k":
 			if m.cursor > 0 {
@@ -75,7 +74,7 @@ func (m selectChartsModel) View() string {
 
 	// Stale = blue (changed), Clean = grey/dimmed (no changes detected)
 	staleNameStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("12")) // blue
-	cleanNameStyle := lipgloss.NewStyle().Faint(true)                     // grey
+	cleanNameStyle := lipgloss.NewStyle().Faint(true)                      // grey
 	staleVerStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
 	cleanVerStyle := lipgloss.NewStyle().Faint(true)
 	staleTagStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("12")).Bold(true)

@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/jsimonovski/helmver/internal/chart"
-	"github.com/jsimonovski/helmver/internal/git"
+	"github.com/jordan-simonovski/helmver/internal/chart"
+	"github.com/jordan-simonovski/helmver/internal/git"
 )
 
 var checkCmd = &cobra.Command{

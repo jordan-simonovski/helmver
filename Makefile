@@ -1,5 +1,5 @@
 BINARY   := helmver
-MODULE   := github.com/jsimonovski/helmver
+MODULE   := github.com/jordan-simonovski/helmver
 VERSION  ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS  := -s -w -X '$(MODULE)/cmd.version=$(VERSION)'
 

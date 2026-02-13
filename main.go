@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/jsimonovski/helmver/cmd"
+	"github.com/jordan-simonovski/helmver/cmd"
 )
 
 func main() {

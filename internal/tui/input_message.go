@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/jsimonovski/helmver/internal/chart"
+	"github.com/jordan-simonovski/helmver/internal/chart"
 )
 
 // inputMessageModel lets the user write a multiline changelog message.
@@ -39,10 +39,8 @@ func (m inputMessageModel) Init() tea.Cmd {
 }
 
 func (m inputMessageModel) Update(msg tea.Msg) (inputMessageModel, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+d":
+	if msg, ok := msg.(tea.KeyMsg); ok {
+		if msg.String() == "ctrl+d" {
 			val := strings.TrimSpace(m.textarea.Value())
 			if val != "" {
 				m.message = val
