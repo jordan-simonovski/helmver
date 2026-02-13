@@ -28,8 +28,7 @@ func (m selectBumpModel) Init() tea.Cmd {
 }
 
 func (m selectBumpModel) Update(msg tea.Msg) (selectBumpModel, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	if msg, ok := msg.(tea.KeyMsg); ok {
 		switch msg.String() {
 		case "up", "k":
 			if m.cursor > 0 {

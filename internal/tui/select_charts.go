@@ -31,8 +31,7 @@ func (m selectChartsModel) Init() tea.Cmd {
 }
 
 func (m selectChartsModel) Update(msg tea.Msg) (selectChartsModel, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	if msg, ok := msg.(tea.KeyMsg); ok {
 		switch msg.String() {
 		case "up", "k":
 			if m.cursor > 0 {
