@@ -10,7 +10,7 @@ RUN go mod download
 
 COPY . .
 RUN CGO_ENABLED=0 go build \
-    -ldflags "-s -w -X 'github.com/jsimonovski/helmver/cmd.version=${VERSION}'" \
+    -ldflags "-s -w -X 'github.com/jordan-simonovski/helmver/cmd.version=${VERSION}'" \
     -o /helmver .
 
 FROM alpine:3.20

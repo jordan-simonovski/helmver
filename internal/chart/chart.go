@@ -96,7 +96,7 @@ func (c *Chart) write() error {
 }
 
 // BumpVersion computes the next semver given a bump type.
-func BumpVersion(current string, bump string) (string, error) {
+func BumpVersion(current, bump string) (string, error) {
 	// Strip leading 'v' if present
 	trimmed := strings.TrimPrefix(current, "v")
 	parts := strings.SplitN(trimmed, ".", 3)

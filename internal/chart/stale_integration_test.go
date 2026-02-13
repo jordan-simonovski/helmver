@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/jsimonovski/helmver/internal/chart"
-	"github.com/jsimonovski/helmver/internal/git"
+	"github.com/jordan-simonovski/helmver/internal/chart"
+	"github.com/jordan-simonovski/helmver/internal/git"
 )
 
 // Integration tests that validate the discover -> load -> staleness pipeline.

@@ -6,7 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/jsimonovski/helmver/internal/chart"
+	"github.com/jordan-simonovski/helmver/internal/chart"
 )
 
 var bumpTypes = []string{"patch", "minor", "major"}

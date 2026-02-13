@@ -6,7 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/jsimonovski/helmver/internal/chart"
+	"github.com/jordan-simonovski/helmver/internal/chart"
 )
 
 // Changeset captures the user's choices for a single chart.
@@ -33,8 +33,7 @@ func (m confirmModel) Init() tea.Cmd {
 }
 
 func (m confirmModel) Update(msg tea.Msg) (confirmModel, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	if msg, ok := msg.(tea.KeyMsg); ok {
 		switch msg.String() {
 		case "y", "Y":
 			m.confirmed = true

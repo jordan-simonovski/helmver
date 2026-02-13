@@ -34,7 +34,7 @@ func RepoRoot(dir string) (string, error) {
 //  1. Find the last commit that changed the "version:" line in Chart.yaml.
 //  2. Check if any files in the chart directory have changed since that commit.
 //  3. If there are changes (or no version commit exists), the chart is stale.
-func IsStale(chartDir string, chartFile string) (bool, error) {
+func IsStale(chartDir, chartFile string) (bool, error) {
 	repoRoot, err := RepoRoot(chartDir)
 	if err != nil {
 		return false, err
@@ -72,10 +72,7 @@ func IsStale(chartDir string, chartFile string) (bool, error) {
 
 	// Check for any changes in the chart directory since that commit
 	// (both committed and uncommitted)
-	changes, err := changedFilesSince(repoRoot, lastVersionCommit, relDir)
-	if err != nil {
-		return false, err
-	}
+	changes := changedFilesSince(repoRoot, lastVersionCommit, relDir)
 
 	return len(changes) > 0, nil
 }
@@ -97,7 +94,7 @@ func lastCommitChangingVersion(repoRoot, relChartFile string) (string, error) {
 
 // changedFilesSince returns files in relDir that have changed since the given commit.
 // This includes both committed changes and uncommitted working tree changes.
-func changedFilesSince(repoRoot, commit, relDir string) ([]string, error) {
+func changedFilesSince(repoRoot, commit, relDir string) []string {
 	// Committed changes since the version bump
 	cmd := exec.Command("git", "-C", repoRoot,
 		"diff", "--name-only", commit, "HEAD", "--", relDir,
@@ -128,7 +125,7 @@ func changedFilesSince(repoRoot, commit, relDir string) ([]string, error) {
 			unique = append(unique, f)
 		}
 	}
-	return unique, nil
+	return unique
 }
 
 func splitLines(s string) []string {

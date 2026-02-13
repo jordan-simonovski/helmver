@@ -1,4 +1,4 @@
-module github.com/jsimonovski/helmver
+module github.com/jordan-simonovski/helmver
 
 go 1.25.1
 

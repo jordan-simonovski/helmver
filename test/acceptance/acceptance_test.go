@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsimonovski/helmver/internal/changelog"
-	"github.com/jsimonovski/helmver/internal/chart"
-	"github.com/jsimonovski/helmver/internal/git"
+	"github.com/jordan-simonovski/helmver/internal/changelog"
+	"github.com/jordan-simonovski/helmver/internal/chart"
+	"github.com/jordan-simonovski/helmver/internal/git"
 )
 
 var binary string
@@ -254,8 +254,12 @@ func TestAcceptance_SingleChart_CleanAfterBumpCommit(t *testing.T) {
 	// Bump version and commit
 	c, _ := chart.Load(filepath.Join(repo, "Chart.yaml"))
 	newVer, _ := chart.BumpVersion(c.Version, "patch")
-	c.SetVersion(newVer)
-	changelog.Prepend(c.Dir, newVer, "Bumped replicas.")
+	if err := c.SetVersion(newVer); err != nil {
+		t.Fatal(err)
+	}
+	if err := changelog.Prepend(c.Dir, newVer, "Bumped replicas."); err != nil {
+		t.Fatal(err)
+	}
 	gitRun(t, repo, "add", "-A")
 	gitRun(t, repo, "commit", "-m", "bump to "+newVer)
 
@@ -334,8 +338,12 @@ func TestAcceptance_Monorepo_BumpOneLeaveOthersClean(t *testing.T) {
 	// Bump only api
 	c, _ := chart.Load(filepath.Join(repo, "charts", "api", "Chart.yaml"))
 	newVer, _ := chart.BumpVersion(c.Version, "minor")
-	c.SetVersion(newVer)
-	changelog.Prepend(c.Dir, newVer, "Added new endpoint.")
+	if err := c.SetVersion(newVer); err != nil {
+		t.Fatal(err)
+	}
+	if err := changelog.Prepend(c.Dir, newVer, "Added new endpoint."); err != nil {
+		t.Fatal(err)
+	}
 	gitRun(t, repo, "add", "-A")
 	gitRun(t, repo, "commit", "-m", "bump api to "+newVer)
 
@@ -375,10 +383,18 @@ func TestAcceptance_Monorepo_ApplyMultipleBumps(t *testing.T) {
 		t.Fatalf("expected worker 0.5.1, got %q", workerNew)
 	}
 
-	apiChart.SetVersion(apiNew)
-	changelog.Prepend(apiChart.Dir, apiNew, "New list endpoint for paginated results.")
-	workerChart.SetVersion(workerNew)
-	changelog.Prepend(workerChart.Dir, workerNew, "Fixed retry backoff logic.")
+	if err := apiChart.SetVersion(apiNew); err != nil {
+		t.Fatal(err)
+	}
+	if err := changelog.Prepend(apiChart.Dir, apiNew, "New list endpoint for paginated results."); err != nil {
+		t.Fatal(err)
+	}
+	if err := workerChart.SetVersion(workerNew); err != nil {
+		t.Fatal(err)
+	}
+	if err := changelog.Prepend(workerChart.Dir, workerNew, "Fixed retry backoff logic."); err != nil {
+		t.Fatal(err)
+	}
 
 	// Verify both Chart.yaml files
 	a, _ := chart.Load(filepath.Join(repo, "charts", "api", "Chart.yaml"))
@@ -429,7 +445,9 @@ func TestAcceptance_ComplexChart_PreservesComments(t *testing.T) {
 		t.Fatalf("expected v1.6.0, got %q", newVer)
 	}
 
-	c.SetVersion(newVer)
+	if err := c.SetVersion(newVer); err != nil {
+		t.Fatal(err)
+	}
 
 	// Re-read raw file and verify comments survived
 	raw := readFile(t, filepath.Join(repo, "Chart.yaml"))
@@ -454,8 +472,12 @@ func TestAcceptance_ComplexChart_PrependsExistingChangelog(t *testing.T) {
 
 	c, _ := chart.Load(filepath.Join(repo, "Chart.yaml"))
 	newVer, _ := chart.BumpVersion(c.Version, "patch")
-	c.SetVersion(newVer)
-	changelog.Prepend(c.Dir, newVer, "Fixed edge case in query parser.")
+	if err := c.SetVersion(newVer); err != nil {
+		t.Fatal(err)
+	}
+	if err := changelog.Prepend(c.Dir, newVer, "Fixed edge case in query parser."); err != nil {
+		t.Fatal(err)
+	}
 
 	cl := readFile(t, filepath.Join(repo, "CHANGELOG.md"))
 
@@ -542,8 +564,12 @@ func TestAcceptance_Subchart_BumpSubchartOnly(t *testing.T) {
 		t.Fatalf("expected 0.2.0, got %q", newVer)
 	}
 
-	redis.SetVersion(newVer)
-	changelog.Prepend(redis.Dir, newVer, "Added persistence support.")
+	if err := redis.SetVersion(newVer); err != nil {
+		t.Fatal(err)
+	}
+	if err := changelog.Prepend(redis.Dir, newVer, "Added persistence support."); err != nil {
+		t.Fatal(err)
+	}
 
 	// Verify redis bumped
 	r, _ := chart.Load(filepath.Join(repo, "charts", "redis", "Chart.yaml"))
@@ -606,8 +632,12 @@ func TestAcceptance_NonGit_ApplyBumpAndChangelog(t *testing.T) {
 		t.Fatalf("expected 1.0.0, got %q", newVer)
 	}
 
-	c.SetVersion(newVer)
-	changelog.Prepend(c.Dir, newVer, "Breaking: restructured values schema.")
+	if err := c.SetVersion(newVer); err != nil {
+		t.Fatal(err)
+	}
+	if err := changelog.Prepend(c.Dir, newVer, "Breaking: restructured values schema."); err != nil {
+		t.Fatal(err)
+	}
 
 	// Verify
 	reloaded, _ := chart.Load(filepath.Join(dir, "Chart.yaml"))

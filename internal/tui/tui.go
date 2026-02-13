@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/jsimonovski/helmver/internal/chart"
+	"github.com/jordan-simonovski/helmver/internal/chart"
 )
 
 // phase tracks the TUI state machine.
