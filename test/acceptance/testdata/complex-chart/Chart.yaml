@@ -1,0 +1,23 @@
+apiVersion: v2
+name: complex-app
+description: A complex chart with comments and extra fields
+# This is the chart version - managed by helmver
+version: v1.5.2
+# App version tracks the upstream container image
+appVersion: "2.3.1"
+type: application
+keywords:
+  - app
+  - complex
+home: https://example.com/complex-app
+sources:
+  - https://github.com/example/complex-app
+maintainers:
+  - name: dev-team
+    email: dev@example.com
+    url: https://example.com
+dependencies:
+  - name: postgresql
+    version: "12.1.0"
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled

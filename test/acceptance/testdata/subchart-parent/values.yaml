@@ -1,0 +1,3 @@
+redis:
+  enabled: true
+  port: 6379

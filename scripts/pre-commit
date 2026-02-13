@@ -1,0 +1,31 @@
+#!/usr/bin/env sh
+#
+# Git pre-commit hook for helmver.
+# Runs `helmver check` and blocks the commit if any chart versions are stale.
+#
+# Install:
+#   cp scripts/pre-commit .git/hooks/pre-commit
+#   chmod +x .git/hooks/pre-commit
+#
+# Or with a custom chart directory:
+#   HELMVER_DIR=charts scripts/pre-commit
+
+set -e
+
+HELMVER_BIN="${HELMVER_BIN:-helmver}"
+HELMVER_DIR="${HELMVER_DIR:-.}"
+
+if ! command -v "$HELMVER_BIN" >/dev/null 2>&1; then
+    echo "helmver: not found in PATH, skipping version check"
+    echo "helmver: install from https://github.com/jsimonovski/helmver"
+    exit 0
+fi
+
+echo "helmver: checking chart versions..."
+
+if ! "$HELMVER_BIN" check --dir "$HELMVER_DIR"; then
+    echo ""
+    echo "helmver: chart versions are stale. Run 'helmver changeset' to bump them."
+    echo "helmver: to skip this check, use 'git commit --no-verify'"
+    exit 1
+fi

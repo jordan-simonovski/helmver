@@ -1,0 +1,7 @@
+replicaCount: 2
+image:
+  repository: api-service
+  tag: "3.0.0"
+env:
+  LOG_LEVEL: info
+  DB_HOST: postgres

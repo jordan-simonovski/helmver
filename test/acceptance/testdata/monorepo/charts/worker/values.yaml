@@ -1,0 +1,7 @@
+replicaCount: 1
+image:
+  repository: worker
+  tag: "1.0.0"
+queue:
+  name: default
+  concurrency: 5

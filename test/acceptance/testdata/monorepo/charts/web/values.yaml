@@ -1,0 +1,7 @@
+replicaCount: 3
+image:
+  repository: web-frontend
+  tag: "5.1.0"
+ingress:
+  enabled: true
+  host: app.example.com

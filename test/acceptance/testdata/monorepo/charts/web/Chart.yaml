@@ -1,0 +1,6 @@
+apiVersion: v2
+name: web
+description: Frontend web application
+type: application
+version: 2.0.0
+appVersion: "5.1.0"

@@ -1,0 +1,8 @@
+replicaCount: 2
+image:
+  repository: complex-app
+  tag: "2.3.1"
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: changeme

@@ -1,0 +1,10 @@
+dist/
+helmver
+.git/
+.github/
+.idea/
+.DS_Store
+*.md
+LICENSE
+test/
+scripts/

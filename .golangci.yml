@@ -1,0 +1,33 @@
+run:
+  timeout: 3m
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gosimple
+    - gocritic
+    - gofmt
+    - goimports
+    - misspell
+    - unconvert
+    - unparam
+
+linters-settings:
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+  misspell:
+    locale: US
+
+issues:
+  exclude-rules:
+    # Test files can have longer functions
+    - path: _test\.go
+      linters:
+        - gocritic
+        - unparam
