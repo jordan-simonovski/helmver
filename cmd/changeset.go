@@ -37,6 +37,18 @@ func runChangeset(cmd *cobra.Command, args []string) error {
 	}
 
 	hasGit := git.IsRepo(absDir)
+	var repoRoot string
+	if hasGit {
+		repoRoot, err = git.RepoRoot(absDir)
+		if err != nil {
+			hasGit = false
+		}
+	}
+
+	baseRef := base
+	if baseRef == "" {
+		baseRef = git.ResolveBase()
+	}
 
 	var all []*chart.Chart
 	for _, path := range chartPaths {
@@ -47,7 +59,7 @@ func runChangeset(cmd *cobra.Command, args []string) error {
 		}
 
 		if hasGit {
-			isStale, err := git.IsStale(c.Dir, c.Path)
+			isStale, err := git.IsStale(repoRoot, c.Dir, c.Path, baseRef, c.Version)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "warning: checking %s: %s\n", c.Name, err)
 				// Can't determine staleness; leave as not stale

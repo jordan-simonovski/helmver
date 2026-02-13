@@ -48,6 +48,7 @@ func TestIntegration_MonorepoStaleness(t *testing.T) {
 	}
 	gitRun(t, dir, "add", "-A")
 	gitRun(t, dir, "commit", "-m", "init")
+	gitRun(t, dir, "branch", "base")
 
 	// Modify only api
 	mkFile(t, filepath.Join(dir, "charts", "api", "values.yaml"), "key: changed\n")
@@ -69,7 +70,7 @@ func TestIntegration_MonorepoStaleness(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		isStale, err := git.IsStale(c.Dir, c.Path)
+		isStale, err := git.IsStale(dir, c.Dir, c.Path, "base", c.Version)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -112,7 +113,7 @@ func TestIntegration_NonGitDiscovery(t *testing.T) {
 	for _, p := range paths {
 		c, err := chart.Load(p)
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("failed to load %s: %v", p, err)
 		}
 		// Without git, Stale defaults to false
 		if c.Stale {
