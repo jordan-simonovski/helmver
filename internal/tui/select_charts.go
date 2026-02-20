@@ -131,7 +131,7 @@ func (m selectChartsModel) View() string {
 
 		path := pathStyle.Render(c.Dir)
 
-		b.WriteString(fmt.Sprintf("%s%s %s %s  %s  %s\n", cursor, checked, name, ver, tag, path))
+		fmt.Fprintf(&b, "%s%s %s %s  %s  %s\n", cursor, checked, name, ver, tag, path)
 	}
 
 	return b.String()
