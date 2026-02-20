@@ -8,16 +8,23 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jordan-simonovski/helmver/internal/changelog"
+	"github.com/jordan-simonovski/helmver/internal/changeset"
 	"github.com/jordan-simonovski/helmver/internal/chart"
 	"github.com/jordan-simonovski/helmver/internal/git"
 	"github.com/jordan-simonovski/helmver/internal/tui"
 )
 
+var writeChangesetFlag bool
+
 var changesetCmd = &cobra.Command{
 	Use:   "changeset",
 	Short: "Interactively create version bumps and changelogs",
-	Long:  "Scans for Chart.yaml files and launches an interactive TUI to select charts, choose bump types, write changelog messages, and apply changes. Works outside git repos too.",
+	Long:  "Scans for Chart.yaml files and launches an interactive TUI to select charts, choose bump types, and write changelog messages. By default applies immediately; use --write to create .helmver/ changeset files for later application with 'helmver apply'.",
 	RunE:  runChangeset,
+}
+
+func init() {
+	changesetCmd.Flags().BoolVar(&writeChangesetFlag, "write", false, "write .helmver/ changeset files instead of applying immediately")
 }
 
 func runChangeset(cmd *cobra.Command, args []string) error {
@@ -45,7 +52,7 @@ func runChangeset(cmd *cobra.Command, args []string) error {
 		} else {
 			baseRef = base
 			if baseRef == "" {
-				baseRef = git.ResolveBase()
+				baseRef = git.ResolveBase(repoRoot)
 			}
 		}
 	}
@@ -62,12 +69,10 @@ func runChangeset(cmd *cobra.Command, args []string) error {
 			isStale, err := git.IsStale(repoRoot, c.Dir, c.Path, baseRef, c.Version)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "warning: checking %s: %s\n", c.Name, err)
-				// Can't determine staleness; leave as not stale
 			} else {
 				c.Stale = isStale
 			}
 		}
-		// Without git, Stale stays false (unchanged / unknown)
 
 		all = append(all, c)
 	}
@@ -77,7 +82,6 @@ func runChangeset(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Run the interactive TUI with all charts
 	changesets, err := tui.Run(all)
 	if err != nil {
 		return err
@@ -88,7 +92,30 @@ func runChangeset(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Apply the changesets
+	if writeChangesetFlag {
+		cwd, cwdErr := os.Getwd()
+		if cwdErr != nil {
+			return cwdErr
+		}
+		return writeChangesetFiles(cwd, changesets)
+	}
+	return applyChangesets(changesets)
+}
+
+func writeChangesetFiles(root string, changesets []tui.Changeset) error {
+	for _, cs := range changesets {
+		entries := []changeset.Entry{{Chart: cs.Chart.Name, Bump: cs.Bump}}
+		path, err := changeset.Write(root, entries, cs.Message)
+		if err != nil {
+			return fmt.Errorf("writing changeset: %w", err)
+		}
+		fmt.Printf("  %s: %s changeset -> %s\n", cs.Chart.Name, cs.Bump, filepath.Base(path))
+	}
+	fmt.Printf("\n%d changeset(s) written to .helmver/\n", len(changesets))
+	return nil
+}
+
+func applyChangesets(changesets []tui.Changeset) error {
 	for _, cs := range changesets {
 		oldVer := cs.Chart.Version
 		if err := cs.Chart.SetVersion(cs.NewVer); err != nil {
