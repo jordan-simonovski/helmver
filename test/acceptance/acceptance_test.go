@@ -510,7 +510,7 @@ func TestAcceptance_ComplexChart_PrependsExistingChangelog(t *testing.T) {
 func TestAcceptance_Subchart_DiscoversAll(t *testing.T) {
 	repo := setupFixture(t, "subchart-parent")
 
-	paths, err := chart.Discover(repo)
+	paths, err := chart.Discover(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -595,7 +595,7 @@ func TestAcceptance_NonGit_DiscoverAndLoad(t *testing.T) {
 	dir := t.TempDir()
 	copyDir(t, filepath.Join(testdataDir(), "monorepo"), dir)
 
-	paths, err := chart.Discover(filepath.Join(dir, "charts"))
+	paths, err := chart.Discover(filepath.Join(dir, "charts"), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -33,7 +33,7 @@ func runChangeset(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	chartPaths, err := chart.Discover(absDir)
+	chartPaths, err := chart.Discover(absDir, exclude)
 	if err != nil {
 		return fmt.Errorf("discovering charts: %w", err)
 	}
