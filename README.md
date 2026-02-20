@@ -387,6 +387,20 @@ helmver changeset --dir charts/
 
 Each chart gets its own `CHANGELOG.md` in its directory.
 
+### Excluding charts
+
+Use `--exclude` to skip paths during discovery. Patterns match against directory and file names relative to `--dir`.
+
+```bash
+# Skip vendored upstream charts stored under version directories
+helmver check --dir helm/charts --exclude '[0-9]*'
+
+# Skip multiple patterns
+helmver check --dir charts/ --exclude 'vendor' --exclude 'test-*'
+```
+
+Matched directories are not descended into, so excluded subtrees are skipped entirely. See [Excluding charts from discovery](docs/excluding-charts.md) for pattern syntax, matching rules, and common examples.
+
 ## Subchart support
 
 Subcharts (charts nested under `charts/` within a parent chart) are discovered and versioned independently:

@@ -43,7 +43,7 @@ func runApply(cmd *cobra.Command, args []string) error {
 
 	resolved := changeset.Aggregate(files)
 
-	chartPaths, err := chart.Discover(absDir)
+	chartPaths, err := chart.Discover(absDir, exclude)
 	if err != nil {
 		return fmt.Errorf("discovering charts: %w", err)
 	}

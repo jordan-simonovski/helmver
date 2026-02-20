@@ -56,7 +56,7 @@ func TestIntegration_MonorepoStaleness(t *testing.T) {
 	gitRun(t, dir, "commit", "-m", "update api")
 
 	// Discover and annotate
-	paths, err := chart.Discover(filepath.Join(dir, "charts"))
+	paths, err := chart.Discover(filepath.Join(dir, "charts"), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +97,7 @@ func TestIntegration_NonGitDiscovery(t *testing.T) {
 			"apiVersion: v2\nname: "+name+"\nversion: 1.0.0\n")
 	}
 
-	paths, err := chart.Discover(filepath.Join(dir, "charts"))
+	paths, err := chart.Discover(filepath.Join(dir, "charts"), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
