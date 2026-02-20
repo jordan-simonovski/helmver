@@ -96,12 +96,12 @@ func (m selectChartsModel) View() string {
 	cleanCount := len(m.charts) - staleCount
 
 	if staleCount > 0 {
-		b.WriteString(fmt.Sprintf("  %s %d changed    %s %d unchanged\n\n",
+		fmt.Fprintf(&b, "  %s %d changed    %s %d unchanged\n\n",
 			staleNameStyle.Render("*"),
 			staleCount,
 			cleanNameStyle.Render("*"),
 			cleanCount,
-		))
+		)
 	} else {
 		b.WriteString(cleanTagStyle.Render("  no changes detected (not a git repo or no diffs)"))
 		b.WriteString("\n\n")
@@ -131,7 +131,7 @@ func (m selectChartsModel) View() string {
 
 		path := pathStyle.Render(c.Dir)
 
-		b.WriteString(fmt.Sprintf("%s%s %s %s  %s  %s\n", cursor, checked, name, ver, tag, path))
+		fmt.Fprintf(&b, "%s%s %s %s  %s  %s\n", cursor, checked, name, ver, tag, path)
 	}
 
 	return b.String()

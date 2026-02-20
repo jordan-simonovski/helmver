@@ -58,12 +58,12 @@ func (m confirmModel) View() string {
 
 	for _, cs := range m.changesets {
 		arrow := okStyle.Render("->")
-		b.WriteString(fmt.Sprintf("  %s  %s %s %s\n",
+		fmt.Fprintf(&b, "  %s  %s %s %s\n",
 			nameStyle.Render(cs.Chart.Name),
 			cs.Chart.Version,
 			arrow,
 			okStyle.Render(cs.NewVer),
-		))
+		)
 		// Show first line of message as preview
 		lines := strings.SplitN(cs.Message, "\n", 2)
 		preview := lines[0]
