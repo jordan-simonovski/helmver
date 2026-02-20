@@ -20,7 +20,7 @@ all: lint test build ## Run lint, test, and build
 
 setup: ## Install dev tooling (golangci-lint, goimports)
 	@echo "Installing golangci-lint..."
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.10.1
 	@echo "Installing goimports..."
 	@go install golang.org/x/tools/cmd/goimports@latest
 	@echo "Done. Make sure $$(go env GOPATH)/bin is in your PATH."

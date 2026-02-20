@@ -79,7 +79,7 @@ func (m selectBumpModel) View() string {
 			label = cursorStyle.Render(bt)
 		}
 
-		b.WriteString(fmt.Sprintf("%s%s %s\n", cursor, label, desc))
+		fmt.Fprintf(&b, "%s%s %s\n", cursor, label, desc)
 	}
 
 	return b.String()
