@@ -22,14 +22,6 @@ base_local="refs/helmver-action/base/${suffix}"
 head_local="refs/helmver-action/head/${suffix}"
 worktree_dir="$(mktemp -d -t helmver-action-pr-status-XXXXXX)"
 
-cleanup() {
-  git -C "$repo_root" worktree remove --force "$worktree_dir" 2>/dev/null || true
-  git -C "$repo_root" update-ref -d "$base_local" 2>/dev/null || true
-  git -C "$repo_root" update-ref -d "$head_local" 2>/dev/null || true
-  rm -rf "$worktree_dir"
-}
-trap cleanup EXIT
-
 is_shallow=false
 if git -C "$repo_root" rev-parse --is-shallow-repository | grep -q true; then
   is_shallow=true

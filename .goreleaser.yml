@@ -27,6 +27,8 @@ builds:
 archives:
   - id: helmver
     formats: [tar.gz]
+    name_template: "helmver_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    wrap_in_directory: false
     format_overrides:
       - goos: windows
         formats: [zip]

@@ -28,6 +28,12 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Set up Go
+      if: inputs.version == 'dev'
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: ${{ github.action_path }}/../../go.mod
+
     - name: Install helmver
       shell: bash
       run: bash "${{ github.action_path }}/../setup/install.sh"

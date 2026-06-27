@@ -35,6 +35,12 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Set up Go
+      if: inputs.version == 'dev'
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: ${{ github.action_path }}/../../go.mod
+
     - name: Prepare PR worktree
       id: worktree
       shell: bash
@@ -72,6 +78,13 @@ runs:
           echo 'EOF'
         } >> "$GITHUB_OUTPUT"
       working-directory: ${{ steps.worktree.outputs.worktree }}
+
+    - name: Cleanup PR worktree
+      if: always() && steps.worktree.outputs.worktree != ''
+      shell: bash
+      run: |
+        git -C "$(git rev-parse --show-toplevel)" worktree remove --force "${{ steps.worktree.outputs.worktree }}" 2>/dev/null || true
+        rm -rf "${{ steps.worktree.outputs.worktree }}"
 branding:
   icon: info
   color: blue

@@ -8,6 +8,10 @@ install_dir="${RUNNER_TEMP:-/tmp}/helmver-bin"
 mkdir -p "$install_dir"
 
 if [[ "$VERSION" == "dev" ]]; then
+  if ! command -v go >/dev/null 2>&1; then
+    echo "go is not available; run actions/setup-go before using version=dev, or pin a released version instead." >&2
+    exit 1
+  fi
   src_dir="${GITHUB_WORKSPACE:-.}"
   if [[ ! -f "${src_dir}/main.go" ]]; then
     echo "helmver source not found at ${src_dir}" >&2
@@ -53,16 +57,28 @@ if [[ "$OS" == "windows" ]]; then
   ARCHIVE="${install_dir}/${ASSET}.zip"
   curl -fsSL "https://github.com/${REPO}/releases/download/v${VERSION_NUM}/${ASSET}.zip" -o "$ARCHIVE"
   unzip -o "$ARCHIVE" -d "$install_dir"
+  bin_name="helmver.exe"
 else
   ARCHIVE="${install_dir}/${ASSET}.tar.gz"
   curl -fsSL "https://github.com/${REPO}/releases/download/v${VERSION_NUM}/${ASSET}.tar.gz" -o "$ARCHIVE"
   tar -xzf "$ARCHIVE" -C "$install_dir"
+  bin_name="helmver"
 fi
 
-chmod +x "${install_dir}/helmver"
+bin_path="$(find "$install_dir" -type f -name "$bin_name" | head -n 1)"
+if [[ -z "$bin_path" ]]; then
+  echo "helmver binary not found after extracting ${ASSET}" >&2
+  exit 1
+fi
+
+target="${install_dir}/${bin_name}"
+if [[ "$bin_path" != "$target" ]]; then
+  mv "$bin_path" "$target"
+fi
+chmod +x "$target"
 
 if [[ -n "${GITHUB_PATH:-}" ]]; then
   echo "$install_dir" >> "$GITHUB_PATH"
 fi
 
-"${install_dir}/helmver" --version
+"$target" --version
