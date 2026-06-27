@@ -21,6 +21,10 @@ inputs:
     description: helmver version to install
     required: false
     default: latest
+  repository:
+    description: GitHub repository that hosts helmver release assets
+    required: false
+    default: jordan-simonovski/helmver
 outputs:
   comment-body:
     description: Markdown comment body describing helmver/chart status
@@ -41,7 +45,7 @@ runs:
       run: bash "${{ github.action_path }}/../setup/install.sh"
       env:
         INPUT_VERSION: ${{ inputs.version }}
-        INPUT_REPOSITORY: jordan-simonovski/helmver
+        INPUT_REPOSITORY: ${{ inputs.repository }}
 
     - name: Generate status
       id: status

@@ -35,41 +35,27 @@ name: Comment helmver status on PRs
 on:
   pull_request_target:
 
-permissions: {}
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
-  pr-status:
+  helmver:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    outputs:
-      comment-body: ${{ steps.status.outputs.comment-body }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - id: status
-        uses: jordan-simonovski/helmver/action/pr-status@v1
+      - uses: jordan-simonovski/helmver@v1
         with:
           dir: charts/
-
-  pr-comment:
-    needs: pr-status
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-    steps:
-      - uses: jordan-simonovski/helmver/action/pr-comment@v1
-        with:
-          body: ${{ needs.pr-status.outputs.comment-body }}
+          check: false
 ```
 
-Required permissions for the comment job: `pull-requests: write`. The default `GITHUB_TOKEN` is sufficient — no extra secrets needed.
+For split jobs (separate status + comment steps), see [action/README.md](../action/README.md).
+
+Required permissions: `pull-requests: write` for commenting. The default `GITHUB_TOKEN` is sufficient — no extra secrets needed.
 
 ## Manual PR check (without the action)
 

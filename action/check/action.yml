@@ -21,6 +21,10 @@ inputs:
     description: helmver version to install
     required: false
     default: latest
+  repository:
+    description: GitHub repository that hosts helmver release assets
+    required: false
+    default: jordan-simonovski/helmver
 runs:
   using: composite
   steps:
@@ -29,7 +33,7 @@ runs:
       run: bash "${{ github.action_path }}/../setup/install.sh"
       env:
         INPUT_VERSION: ${{ inputs.version }}
-        INPUT_REPOSITORY: jordan-simonovski/helmver
+        INPUT_REPOSITORY: ${{ inputs.repository }}
 
     - name: Check chart versions
       shell: bash

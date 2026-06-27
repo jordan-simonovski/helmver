@@ -1,0 +1,92 @@
+name: helmver
+description: Check Helm chart versions and optionally comment changeset status on pull requests.
+branding:
+  icon: package
+  color: green
+
+inputs:
+  dir:
+    description: Root directory to scan for Chart.yaml files
+    required: false
+    default: .
+  base:
+    description: Base git ref to compare against
+    required: false
+    default: ""
+  require-changeset:
+    description: Accept pending .helmver/ changeset files as valid bump intent
+    required: false
+    default: "true"
+  exclude:
+    description: Comma-separated glob patterns to exclude from chart discovery
+    required: false
+    default: ""
+  version:
+    description: helmver release tag to install (for example v0.6.0), or latest
+    required: false
+    default: latest
+  repository:
+    description: GitHub repository that hosts helmver release assets
+    required: false
+    default: jordan-simonovski/helmver
+  check:
+    description: Run helmver check and fail when chart versions are stale
+    required: false
+    default: "true"
+  comment:
+    description: Post or update a pull request comment with helmver status
+    required: false
+    default: "true"
+  comment-marker:
+    description: HTML comment marker used to upsert the same PR comment across pushes
+    required: false
+    default: helmver-action-pr-comment
+  token:
+    description: GitHub token for PR comments
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  comment-body:
+    description: Markdown comment body when comment runs on a pull request
+    value: ${{ steps.status.outputs.comment-body }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Go
+      if: inputs.version == 'dev'
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: ${{ github.action_path }}/go.mod
+
+    - name: Check chart versions
+      if: inputs.check == 'true'
+      uses: ./action/check
+      with:
+        dir: ${{ inputs.dir }}
+        base: ${{ inputs.base }}
+        require-changeset: ${{ inputs.require-changeset }}
+        exclude: ${{ inputs.exclude }}
+        version: ${{ inputs.version }}
+        repository: ${{ inputs.repository }}
+
+    - name: Generate PR status
+      id: status
+      if: inputs.comment == 'true' && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target')
+      uses: ./action/pr-status
+      with:
+        dir: ${{ inputs.dir }}
+        base: ${{ inputs.base }}
+        require-changeset: ${{ inputs.require-changeset }}
+        exclude: ${{ inputs.exclude }}
+        version: ${{ inputs.version }}
+        repository: ${{ inputs.repository }}
+
+    - name: Comment on pull request
+      if: inputs.comment == 'true' && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && steps.status.outputs.comment-body != ''
+      uses: ./action/pr-comment
+      with:
+        body: ${{ steps.status.outputs.comment-body }}
+        github-token: ${{ inputs.token }}
+        update-id: ${{ inputs.comment-marker }}

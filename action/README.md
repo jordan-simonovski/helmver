@@ -2,12 +2,28 @@
 
 Consumable GitHub Actions for checking Helm chart versions and commenting on pull requests — similar to [changesets/action](https://github.com/changesets/action).
 
+## Marketplace entry point
+
+The root [`action.yml`](../action.yml) is the Marketplace-listed action. Use it as:
+
+```yaml
+- uses: jordan-simonovski/helmver@v1
+  with:
+    dir: charts/
+    require-changeset: true
+```
+
+This runs `helmver check` and, on pull requests, posts a changeset status comment. Set `check: false` or `comment: false` to run only one half.
+
+Sub-actions below remain available for split-job workflows (like changesets/action's `pr-status` + `pr-comment`).
+
 ## Actions
 
 | Action | Description |
 |--------|-------------|
+| [`helmver`](../action.yml) | **Marketplace action** — check + optional PR comment |
 | [`setup`](setup/action.yml) | Install helmver from GitHub Releases |
-| [`check`](check/action.yml) | Fail CI when chart versions are stale |
+| [`check`](check/action.yml) | Fail CI when charts are stale |
 | [`pr-status`](pr-status/action.yml) | Generate a markdown comment body for PR status |
 | [`pr-comment`](pr-comment/action.yml) | Create or update a PR comment |
 
@@ -29,10 +45,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: jordan-simonovski/helmver/action/check@v1
+      - uses: jordan-simonovski/helmver@v1
         with:
           dir: charts/
           require-changeset: true
+          comment: false
+```
+
+Or use the check sub-action directly:
+
+```yaml
+      - uses: jordan-simonovski/helmver/action/check@v1
 ```
 
 ### PR comment (changeset bot)
