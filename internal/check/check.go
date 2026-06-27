@@ -28,11 +28,11 @@ type Result struct {
 
 // Options configures a check run.
 type Options struct {
-	Dir               string
-	Base              string
-	Exclude           []string
-	RequireChangeset  bool
-	ChangesetRoot     string
+	Dir              string
+	Base             string
+	Exclude          []string
+	RequireChangeset bool
+	ChangesetRoot    string
 }
 
 // Run discovers charts, detects staleness, and optionally filters by changesets.

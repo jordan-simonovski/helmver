@@ -45,16 +45,16 @@ func formatMarkdown(result *Result, commitSHA string) string {
 	switch {
 	case result.AllUpToDate && len(result.CoveredCharts) > 0:
 		b.WriteString("### ✅ Changeset detected\n\n")
-		b.WriteString(fmt.Sprintf("Latest commit: `%s`\n\n", commitSHA))
+		fmt.Fprintf(&b, "Latest commit: `%s`\n\n", commitSHA)
 		b.WriteString("**The changes in this PR include helmver changesets for charts that need version bumps.**\n\n")
 		writeChangesetTable(&b, result)
 	case result.AllUpToDate:
 		b.WriteString("### ✅ All charts up to date\n\n")
-		b.WriteString(fmt.Sprintf("Latest commit: `%s`\n\n", commitSHA))
+		fmt.Fprintf(&b, "Latest commit: `%s`\n\n", commitSHA)
 		b.WriteString("No chart version bumps are needed for the changes in this PR.\n")
 	default:
 		b.WriteString("### ⚠️ Charts need a version bump\n\n")
-		b.WriteString(fmt.Sprintf("Latest commit: `%s`\n\n", commitSHA))
+		fmt.Fprintf(&b, "Latest commit: `%s`\n\n", commitSHA)
 		b.WriteString("The following charts have file changes without a version bump or pending changeset:\n\n")
 		writeStaleTable(&b, result.StaleCharts)
 		b.WriteString("\nRun `helmver changeset --write` locally and commit the `.helmver/` files, or bump `version` in `Chart.yaml` directly.\n")
