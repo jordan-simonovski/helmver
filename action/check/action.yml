@@ -21,15 +21,25 @@ inputs:
     description: helmver version to install
     required: false
     default: latest
+  repository:
+    description: GitHub repository that hosts helmver release assets
+    required: false
+    default: jordan-simonovski/helmver
 runs:
   using: composite
   steps:
+    - name: Set up Go
+      if: inputs.version == 'dev'
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: ${{ github.action_path }}/../../go.mod
+
     - name: Install helmver
       shell: bash
       run: bash "${{ github.action_path }}/../setup/install.sh"
       env:
         INPUT_VERSION: ${{ inputs.version }}
-        INPUT_REPOSITORY: jordan-simonovski/helmver
+        INPUT_REPOSITORY: ${{ inputs.repository }}
 
     - name: Check chart versions
       shell: bash

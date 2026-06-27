@@ -14,7 +14,7 @@ PLATFORMS := \
 
 DIST_DIR := dist
 
-.PHONY: all setup build test test-unit test-e2e test-acceptance lint fmt vet clean cross-compile help
+.PHONY: all setup build test test-unit test-e2e test-acceptance lint fmt vet clean cross-compile release-check help
 
 all: lint test build ## Run lint, test, and build
 
@@ -81,3 +81,10 @@ cross-compile: clean ## Cross-compile for all platforms
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | sort | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
+
+release-check: lint test build ## Validate release config (requires goreleaser)
+	@if command -v goreleaser >/dev/null 2>&1; then \
+		goreleaser check; \
+	else \
+		echo "goreleaser not found; skipping goreleaser check"; \
+	fi

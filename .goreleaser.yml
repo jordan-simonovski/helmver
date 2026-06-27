@@ -1,0 +1,44 @@
+version: 2
+
+project_name: helmver
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+builds:
+  - id: helmver
+    main: .
+    binary: helmver
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+      - -X github.com/jordan-simonovski/helmver/cmd.version=v{{ .Version }}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: helmver
+    formats: [tar.gz]
+    name_template: "helmver_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    wrap_in_directory: false
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: checksums.txt
+
+dockers:
+  - ids: [helmver]
+    dockerfile: Dockerfile.release
+    image_templates:
+      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/helmver:v{{ .Version }}"
+      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/helmver:latest"

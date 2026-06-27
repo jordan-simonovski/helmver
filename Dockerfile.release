@@ -1,0 +1,10 @@
+FROM alpine:3.20
+
+RUN apk add --no-cache ca-certificates git
+
+WORKDIR /work
+
+# GoReleaser docker builds use a temp context containing this Dockerfile
+# and the prebuilt binary artifact.
+COPY helmver /usr/local/bin/helmver
+ENTRYPOINT ["/usr/local/bin/helmver"]

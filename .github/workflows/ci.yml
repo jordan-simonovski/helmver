@@ -34,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # git history needed for staleness detection tests
+          fetch-depth: 0
 
       - uses: actions/setup-go@v5
         with:
@@ -59,3 +59,32 @@ jobs:
 
       - name: Verify binary
         run: ./helmver --version
+
+      - name: Detect code changes for commit convention checks
+        id: changed
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            code:
+              - '**/*.go'
+              - 'go.mod'
+              - 'go.sum'
+              - 'Dockerfile*'
+              - '.github/workflows/*.yml'
+              - '.goreleaser.yml'
+
+      - name: Validate PR title uses Conventional Commits
+        if: github.event_name == 'pull_request' && steps.changed.outputs.code == 'true'
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          pattern='^(feat|fix|chore|docs|style|refactor|perf|test|build|ci|revert)(\([a-zA-Z0-9._/-]+\))?(!)?: .+'
+          if [[ "$TITLE" =~ $pattern ]]; then
+            echo "Conventional PR title: $TITLE"
+            exit 0
+          fi
+          echo "PR title must follow Conventional Commits when code changes." >&2
+          echo "Got: $TITLE" >&2
+          echo "Example: feat(ci): add release-please automation" >&2
+          exit 1

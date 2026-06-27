@@ -41,7 +41,15 @@ docker run --rm -v "$(pwd):/work" -w /work ghcr.io/jordan-simonovski/helmver che
 
 ### Binary
 
-Download the latest binary from [GitHub Releases](https://github.com/jordan-simonovski/helmver/releases) and place it in your `PATH`.
+Download the latest archive from [GitHub Releases](https://github.com/jordan-simonovski/helmver/releases) and extract the `helmver` binary into your `PATH`.
+
+```bash
+# Example: linux/arm64
+curl -fsSL -o helmver.tar.gz \
+  https://github.com/jordan-simonovski/helmver/releases/download/v0.5.0/helmver_0.5.0_linux_arm64.tar.gz
+tar -xzf helmver.tar.gz helmver
+sudo mv helmver /usr/local/bin/
+```
 
 Available for Linux, macOS, and Windows on both amd64 and arm64.
 
@@ -447,12 +455,17 @@ make lint
 # Format
 make fmt
 
-# Cross-compile for all platforms
+# Validate GoReleaser config (requires goreleaser installed)
+make release-check
+
+# Cross-compile for all platforms (local only; CI uses GoReleaser)
 make cross-compile
 
 # Show all targets
 make help
 ```
+
+Release automation is documented in [docs/release-flow.md](docs/release-flow.md).
 
 ## License
 
