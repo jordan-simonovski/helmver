@@ -1,0 +1,23 @@
+name: Setup helmver
+description: Install helmver from GitHub Releases
+inputs:
+  version:
+    description: helmver version tag (e.g. v1.0.0) or "latest"
+    required: false
+    default: latest
+  repository:
+    description: GitHub repository to download releases from
+    required: false
+    default: jordan-simonovski/helmver
+runs:
+  using: composite
+  steps:
+    - name: Install helmver
+      shell: bash
+      run: bash "${{ github.action_path }}/install.sh"
+      env:
+        INPUT_VERSION: ${{ inputs.version }}
+        INPUT_REPOSITORY: ${{ inputs.repository }}
+branding:
+  icon: download
+  color: blue

@@ -1,6 +1,77 @@
 # GitHub Actions
 
-## PR check
+## PR check with the helmver action
+
+The simplest setup uses the published GitHub Action:
+
+```yaml
+name: Chart version check
+on: pull_request
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: jordan-simonovski/helmver/action/check@v1
+        with:
+          dir: charts/
+          require-changeset: true
+```
+
+See [action/README.md](../action/README.md) for PR comment bot setup and all action inputs.
+
+Drop `--require-changeset` (or set `require-changeset: false`) if your team bumps versions directly in PRs instead of using changeset files.
+
+## PR comment bot
+
+Post a comment on every PR showing chart version status — similar to the [changesets bot](https://github.com/changesets/action):
+
+```yaml
+name: Comment helmver status on PRs
+on:
+  pull_request_target:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  pr-status:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      comment-body: ${{ steps.status.outputs.comment-body }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: status
+        uses: jordan-simonovski/helmver/action/pr-status@v1
+        with:
+          dir: charts/
+
+  pr-comment:
+    needs: pr-status
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: jordan-simonovski/helmver/action/pr-comment@v1
+        with:
+          body: ${{ needs.pr-status.outputs.comment-body }}
+```
+
+Required permissions for the comment job: `pull-requests: write`. The default `GITHUB_TOKEN` is sufficient — no extra secrets needed.
+
+## Manual PR check (without the action)
 
 ```yaml
 name: Chart version check
@@ -20,8 +91,6 @@ jobs:
       - name: Check chart versions
         run: helmver check --require-changeset --dir charts/
 ```
-
-Drop `--require-changeset` if your team bumps versions directly in PRs instead of using changeset files.
 
 ## Apply on merge
 
