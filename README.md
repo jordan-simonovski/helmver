@@ -222,9 +222,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - run: go install github.com/jordan-simonovski/helmver@latest
-      - run: helmver check --require-changeset --dir charts/
+      - uses: jordan-simonovski/helmver/action/check@v1
+        with:
+          dir: charts/
+          require-changeset: true
 ```
+
+For PR comments (changeset bot style), see [GitHub Actions](docs/ci-github-actions.md#pr-comment-bot) or [action/README.md](action/README.md).
 
 ```yaml
 # .github/workflows/apply.yml

@@ -1,0 +1,73 @@
+name: helmver PR Status
+description: Generate helmver status comment body for pull requests
+inputs:
+  dir:
+    description: Root directory to scan for Chart.yaml files
+    required: false
+    default: .
+  base:
+    description: Base git ref to compare against
+    required: false
+    default: ""
+  require-changeset:
+    description: Accept pending .helmver/ changeset files as valid bump intent
+    required: false
+    default: "true"
+  exclude:
+    description: Comma-separated glob patterns to exclude from chart discovery
+    required: false
+    default: ""
+  version:
+    description: helmver version to install
+    required: false
+    default: latest
+outputs:
+  comment-body:
+    description: Markdown comment body describing helmver/chart status
+    value: ${{ steps.status.outputs.body }}
+  commit-sha:
+    description: PR head commit SHA included in the comment
+    value: ${{ steps.worktree.outputs.commit }}
+runs:
+  using: composite
+  steps:
+    - name: Prepare PR worktree
+      id: worktree
+      shell: bash
+      run: bash "${{ github.action_path }}/worktree.sh"
+
+    - name: Install helmver
+      shell: bash
+      run: bash "${{ github.action_path }}/../setup/install.sh"
+      env:
+        INPUT_VERSION: ${{ inputs.version }}
+        INPUT_REPOSITORY: jordan-simonovski/helmver
+
+    - name: Generate status
+      id: status
+      shell: bash
+      run: |
+        args=(status --format markdown --commit "${{ steps.worktree.outputs.commit }}" --dir "${{ inputs.dir }}")
+        if [[ -n "${{ inputs.base }}" ]]; then
+          args+=(--base "${{ inputs.base }}")
+        fi
+        if [[ "${{ inputs.require-changeset }}" == "true" ]]; then
+          args+=(--require-changeset)
+        fi
+        if [[ -n "${{ inputs.exclude }}" ]]; then
+          IFS=',' read -ra patterns <<< "${{ inputs.exclude }}"
+          for pattern in "${patterns[@]}"; do
+            args+=(--exclude "$pattern")
+          done
+        fi
+
+        body="$(helmver "${args[@]}" || true)"
+        {
+          echo 'body<<EOF'
+          echo "$body"
+          echo 'EOF'
+        } >> "$GITHUB_OUTPUT"
+      working-directory: ${{ steps.worktree.outputs.worktree }}
+branding:
+  icon: info
+  color: blue

@@ -54,6 +54,15 @@ jobs:
           files: |
             dist/*
 
+      - name: Update action major version tag
+        if: startsWith(github.ref_name, 'v')
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          MAJOR="${GITHUB_REF_NAME%%.*}"
+          git tag -fa "${MAJOR}" -m "Release ${GITHUB_REF_NAME}"
+          git push origin "${MAJOR}" --force
+
   release-docker:
     name: Docker Image
     runs-on: ubuntu-latest

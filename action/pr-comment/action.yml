@@ -1,0 +1,32 @@
+name: helmver PR Comment
+description: Create or update a pull request comment
+inputs:
+  github-token:
+    description: GitHub token with pull-requests write permission
+    required: false
+    default: ${{ github.token }}
+  body:
+    description: Comment body to post on the pull request
+    required: true
+  update-id:
+    description: Marker id for updating the same comment on subsequent runs
+    required: false
+    default: helmver-action-pr-comment
+outputs:
+  comment-id:
+    description: The id of the comment that was created or updated
+    value: ${{ steps.comment.outputs.comment-id }}
+runs:
+  using: composite
+  steps:
+    - name: Comment on PR
+      id: comment
+      shell: bash
+      run: bash "${{ github.action_path }}/comment.sh"
+      env:
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_BODY: ${{ inputs.body }}
+        INPUT_UPDATE_ID: ${{ inputs.update-id }}
+branding:
+  icon: message-circle
+  color: blue

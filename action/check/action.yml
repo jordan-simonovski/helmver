@@ -1,0 +1,53 @@
+name: helmver check
+description: Fail if any Helm chart versions are stale
+inputs:
+  dir:
+    description: Root directory to scan for Chart.yaml files
+    required: false
+    default: .
+  base:
+    description: Base git ref to compare against
+    required: false
+    default: ""
+  require-changeset:
+    description: Accept pending .helmver/ changeset files as valid bump intent
+    required: false
+    default: "true"
+  exclude:
+    description: Comma-separated glob patterns to exclude from chart discovery
+    required: false
+    default: ""
+  version:
+    description: helmver version to install
+    required: false
+    default: latest
+runs:
+  using: composite
+  steps:
+    - name: Install helmver
+      shell: bash
+      run: bash "${{ github.action_path }}/../setup/install.sh"
+      env:
+        INPUT_VERSION: ${{ inputs.version }}
+        INPUT_REPOSITORY: jordan-simonovski/helmver
+
+    - name: Check chart versions
+      shell: bash
+      run: |
+        args=(check --dir "${{ inputs.dir }}")
+        if [[ -n "${{ inputs.base }}" ]]; then
+          args+=(--base "${{ inputs.base }}")
+        fi
+        if [[ "${{ inputs.require-changeset }}" == "true" ]]; then
+          args+=(--require-changeset)
+        fi
+        if [[ -n "${{ inputs.exclude }}" ]]; then
+          IFS=',' read -ra patterns <<< "${{ inputs.exclude }}"
+          for pattern in "${patterns[@]}"; do
+            args+=(--exclude "$pattern")
+          done
+        fi
+        helmver "${args[@]}"
+branding:
+  icon: check-circle
+  color: green
