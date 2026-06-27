@@ -30,10 +30,24 @@ cleanup() {
 }
 trap cleanup EXIT
 
+is_shallow=false
+if git -C "$repo_root" rev-parse --is-shallow-repository | grep -q true; then
+  is_shallow=true
+fi
+
+fetch_ref() {
+  local remote=$1 refspec=$2
+  if $is_shallow; then
+    git -C "$repo_root" fetch --no-tags --depth=1 "$remote" "$refspec"
+  else
+    git -C "$repo_root" fetch --no-tags "$remote" "$refspec"
+  fi
+}
+
 deepen=50
 while true; do
-  git -C "$repo_root" fetch --no-tags --depth=1 origin "refs/heads/${base_ref}:${base_local}"
-  git -C "$repo_root" fetch --no-tags --depth=1 "$head_repo" "refs/heads/${head_ref}:${head_local}"
+  fetch_ref origin "refs/heads/${base_ref}:${base_local}"
+  fetch_ref "$head_repo" "refs/heads/${head_ref}:${head_local}"
 
   git -C "$repo_root" worktree add --detach "$worktree_dir" "$head_local"
 
@@ -45,8 +59,8 @@ while true; do
   git -C "$repo_root" update-ref -d "$head_local" 2>/dev/null || true
   git -C "$repo_root" update-ref -d "$base_local" 2>/dev/null || true
 
-  if ! git -C "$repo_root" rev-parse --is-shallow-repository | grep -q true; then
-    echo "Failed to find merge base and repository is not shallow." >&2
+  if ! $is_shallow; then
+    echo "Failed to find merge base between PR head and base ref." >&2
     exit 1
   fi
 

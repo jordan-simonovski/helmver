@@ -1,14 +1,19 @@
 package check
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/jordan-simonovski/helmver/internal/changeset"
 	"github.com/jordan-simonovski/helmver/internal/chart"
 	"github.com/jordan-simonovski/helmver/internal/git"
 )
+
+// ErrNotGitRepo is returned when staleness cannot be determined outside a git repo.
+var ErrNotGitRepo = errors.New("not a git repository")
 
 // ChartResult holds the check outcome for one chart.
 type ChartResult struct {
@@ -53,7 +58,7 @@ func Run(opts Options) (*Result, error) {
 	}
 
 	if !git.IsRepo(absDir) {
-		return result, nil
+		return nil, ErrNotGitRepo
 	}
 
 	repoRoot, err := git.RepoRoot(absDir)
@@ -66,16 +71,24 @@ func Run(opts Options) (*Result, error) {
 		baseRef = git.ResolveBase(repoRoot)
 	}
 
+	if !git.RefExists(repoRoot, baseRef) {
+		fetchHint := baseRef
+		if strings.HasPrefix(baseRef, "origin/") {
+			fetchHint = "git fetch origin " + strings.TrimPrefix(baseRef, "origin/") + " --depth=1"
+		}
+		return nil, fmt.Errorf("base ref %q not found; fetch it first (e.g. %s) or set --base", baseRef, fetchHint)
+	}
+
 	var stale []*chart.Chart
 	for _, path := range charts {
 		c, err := chart.Load(path)
 		if err != nil {
-			continue
+			return nil, fmt.Errorf("loading %s: %w", path, err)
 		}
 
 		isStale, err := git.IsStale(repoRoot, c.Dir, c.Path, baseRef, c.Version)
 		if err != nil {
-			continue
+			return nil, fmt.Errorf("checking %s: %w", c.Name, err)
 		}
 		if isStale {
 			stale = append(stale, c)

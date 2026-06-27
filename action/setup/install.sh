@@ -19,7 +19,15 @@ esac
 BIN="helmver-${OS}-${ARCH}"
 URL="https://github.com/${REPO}/releases/download/v${TAG}/${BIN}"
 
+install_dir="${RUNNER_TEMP:-/tmp}/helmver-bin"
+mkdir -p "$install_dir"
+
 echo "Installing helmver ${TAG} (${BIN})..."
-curl -fsSL "$URL" -o /usr/local/bin/helmver
-chmod +x /usr/local/bin/helmver
-helmver --version
+curl -fsSL "$URL" -o "${install_dir}/helmver"
+chmod +x "${install_dir}/helmver"
+
+if [[ -n "${GITHUB_PATH:-}" ]]; then
+  echo "$install_dir" >> "$GITHUB_PATH"
+fi
+
+"${install_dir}/helmver" --version
